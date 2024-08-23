@@ -1,0 +1,10 @@
+node_modules
+lib
+out.txt
+# stryker temp files
+.stryker-tmp
+stryker.log
+reports
+coverage
+stuff
+test-files
