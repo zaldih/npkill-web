@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "description": "[wip] Npkill in the browser. Proof Of Concept.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node --loader ts-node/esm --no-warnings ./src/index.ts"
   },
   "repository": {
     "type": "git",
@@ -15,5 +16,14 @@
   "bugs": {
     "url": "https://github.com/zaldih/npkill-web/issues"
   },
-  "homepage": "https://github.com/zaldih/npkill-web#readme"
+  "homepage": "https://github.com/zaldih/npkill-web#readme",
+  "dependencies": {
+    "@angular/cli": "^18.2.3",
+    "express": "^4.19.2",
+    "npkill": "file:../npkill",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
 }
