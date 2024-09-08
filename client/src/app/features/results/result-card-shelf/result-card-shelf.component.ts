@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
-import { Result } from '../result.interface';
+import { NpkillResult } from '../../../../../../shared/npkill-result.interface';
 import { ResultCardComponent } from '../result-card/result-card.component';
+import { ResultsService } from '../results.service';
 
 @Component({
   selector: 'app-result-card-shelf',
@@ -10,13 +11,9 @@ import { ResultCardComponent } from '../result-card/result-card.component';
   styleUrl: './result-card-shelf.component.scss',
 })
 export class ResultCardShelfComponent {
-  results: Result[] = [
-    {
-      path: '../projects/awesome-project/node_modules',
-      size: -1,
-      modificationTime: -1,
-      isDangeroud: false,
-      status: 'live',
-    },
-  ];
+  constructor(private readonly resultsService: ResultsService) {}
+
+  get results(): NpkillResult[] {
+    return this.resultsService.results;
+  }
 }

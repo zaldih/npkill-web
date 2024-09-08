@@ -1,4 +1,4 @@
-export interface Result {
+export interface NpkillResult {
   path: string;
   size: number;
   modificationTime: number;

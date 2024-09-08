@@ -6,11 +6,12 @@ import {
   OnInit,
   SimpleChanges,
 } from '@angular/core';
-import { Result } from '../result.interface';
+import { NpkillResult } from '../../../../../../shared/npkill-result.interface';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton, MatFabButton } from '@angular/material/button';
 import { MatProgressBar } from '@angular/material/progress-bar';
+import { HumanSizePipe } from '../../../shared/directives/human-size.pipe';
 
 @Component({
   selector: 'app-result-card',
@@ -22,12 +23,13 @@ import { MatProgressBar } from '@angular/material/progress-bar';
     MatButton,
     MatFabButton,
     MatProgressBar,
+    HumanSizePipe,
   ],
   templateUrl: './result-card.component.html',
   styleUrl: './result-card.component.scss',
 })
 export class ResultCardComponent implements OnChanges, OnInit {
-  result = input.required<Result>();
+  result = input.required<NpkillResult>();
 
   projectParentPath: string = '';
   projectName: string = '';
