@@ -3,18 +3,21 @@
     <div class="project-name">{{ projectName }}</div>
     <div class="project-path">{{ projectParentPath }}/</div>
 
-    @if(result().modificationTime >=0){
-    <div class="last-mod-stat">
-      Used <span>{{ result().modificationTime }} days</span> ago.
-    </div>
-    } @if(result().size === -1 || result().modificationTime === -1){
-    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    @if (result().modificationTime >= 0) {
+      <div class="last-mod-stat">
+        Used <span>{{ result().modificationTime }} days</span> ago.
+      </div>
     }
+    @if (result().size === -1 || result().modificationTime === -1) {
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    }
+
+    <app-cosmic-btn [text]="result().size | humanSize" />
 
     <button mat-fab extended aria-label="Remove" class="remove-btn">
       <mat-icon>delete</mat-icon>
-      @if(result().size > 0){
-      <span class="size-stat">{{ result().size | humanSize }}</span>
+      @if (result().size > 0) {
+        <span class="size-stat">{{ result().size | humanSize }}</span>
       }
     </button>
   </mat-card-content>

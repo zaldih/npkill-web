@@ -12,6 +12,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatButton, MatFabButton } from '@angular/material/button';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { HumanSizePipe } from '../../../shared/directives/human-size.pipe';
+import { CosmicBtnComponent } from '../../cosmic-btn/cosmic-btn.component';
 
 @Component({
   selector: 'app-result-card',
@@ -24,6 +25,7 @@ import { HumanSizePipe } from '../../../shared/directives/human-size.pipe';
     MatFabButton,
     MatProgressBar,
     HumanSizePipe,
+    CosmicBtnComponent,
   ],
   templateUrl: './result-card.component.html',
   styleUrl: './result-card.component.scss',
