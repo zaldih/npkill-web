@@ -7,6 +7,7 @@ import {
   GetFolderLastModificationOptions,
   GetFolderSizeResult,
   GetFolderLastModificationResult,
+  LogEntry,
 } from "npkill";
 import { WebSocketServer, WebSocket } from "ws";
 import { NpkillResult } from "../../shared/npkill-result.interface.js";
@@ -23,6 +24,7 @@ class NpkillServer {
   private npkillStarted = false;
   private clients: WebSocket[] = [];
   private results: NpkillResult[] = [];
+  private logs: LogEntry[] = [];
   private destroy$ = new Subject<void>();
 
   constructor() {
@@ -36,6 +38,8 @@ class NpkillServer {
       }
 
       this.sendMessage(ws, { type: "NEW_RESULT", payload: this.results });
+
+      this.sendMessage(ws, { type: "LOG", payload: this.logs });
 
       ws.on("close", () => {
         console.log("Client disconnected");
@@ -51,6 +55,18 @@ class NpkillServer {
       target: "node_modules",
       exclude: [".git"],
     };
+    npkill
+      .getLogs$()
+      .pipe(
+        tap((log) => {
+          this.logs = log;
+          this.clients.forEach((client) => {
+            this.sendMessage(client, { type: "LOG", payload: log });
+          });
+        })
+      )
+      .subscribe();
+
     npkill
       .startScan$(scanOptions)
       .pipe(

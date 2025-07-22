@@ -1,0 +1,9 @@
+<div *ngIf="logs.length === 0">No logs yet.</div>
+<div *ngFor="let log of logs">
+  <span [ngClass]="log.type">
+    {{ log.timestamp | date : "dd/MM/yy HH:mm:ss" }}:{{
+      log.timestamp | date : "SSS"
+    }}
+    - ({{ log.type }}): {{ log.message }}
+  </span>
+</div>
