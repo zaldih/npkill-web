@@ -1,5 +1,8 @@
 <div class="shelf">
-  @for (result of results; track result.path) {
+  @if (filteredResults.length) { @for (result of filteredResults; track
+  result.path) {
   <app-result-card [result]="result" />
+  } } @else {
+  <div class="no-results">No results found.</div>
   }
 </div>

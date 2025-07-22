@@ -1,2 +1,2 @@
-<app-result-toolbar />
-<app-result-card-shelf />
+<app-result-toolbar (searchChanged)="onSearchChanged($event)" />
+<app-result-card-shelf [search]="search" />

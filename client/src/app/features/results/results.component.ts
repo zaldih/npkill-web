@@ -9,4 +9,10 @@ import { ResultToolbarComponent } from './results-toolbar/navbar.component';
   templateUrl: './results.component.html',
   styleUrl: './results.component.scss',
 })
-export class ResultsComponent {}
+export class ResultsComponent {
+  search = '';
+
+  onSearchChanged(term: string) {
+    this.search = term;
+  }
+}
