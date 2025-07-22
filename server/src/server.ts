@@ -1,5 +1,14 @@
 import express from "express";
-import { Npkill } from "npkill";
+import {
+  Npkill,
+  ScanOptions,
+  ScanFoundFolder,
+  GetFolderSizeOptions,
+  GetFolderLastModificationOptions,
+  GetFolderSizeResult,
+  GetFolderLastModificationResult,
+} from "npkill";
+
 import { WebSocketServer, WebSocket } from "ws";
 import { NpkillResult } from "../../shared/npkill-result.interface.js";
 import { Message } from "../../shared/websocket/websocket-messages.interface.js";
@@ -37,60 +46,62 @@ wss.on("connection", (ws: WebSocket) => {
 
 function startNpkill() {
   const npkill = new Npkill();
+  const scanOptions: ScanOptions = {
+    rootPath: "/home/zaldih/projects",
+    target: "node_modules",
+    exclude: [".git"],
+  };
   npkill
-    .findFolders({ path: "/home/zaldih/projects", target: "node_modules" })
+    .startScan$(scanOptions)
     .pipe(
-      tap((rawResult) => {
+      tap((found: ScanFoundFolder) => {
         const result: NpkillResult = {
-          path: rawResult,
+          path: found.path,
           isDangeroud: false,
           modificationTime: -1,
           size: -1,
           status: "live",
         };
         results = [...results, result];
-
         clients.forEach((client) => {
           sendMessage(client, { type: "NEW_RESULT", payload: [result] });
         });
 
+        const sizeOptions: GetFolderSizeOptions = { path: found.path };
         npkill
-          .getFolderStats(rawResult)
+          .getFolderSize$(sizeOptions)
           .pipe(
             take(1),
-            tap((size) => {
-              const a = results.findIndex((r) => r.path === rawResult);
-              if (a === -1) {
-                console.log({ rawResult, size, a });
-                throw new Error("Result not found.");
-              }
-              results[a] = { ...results[a], size };
-
+            tap((sizeResult: GetFolderSizeResult) => {
+              const idx = results.findIndex((r) => r.path === found.path);
+              if (idx === -1) throw new Error("Result not found.");
+              results[idx] = { ...results[idx], size: sizeResult.size };
               clients.forEach((client) => {
                 sendMessage(client, {
                   type: "UPDATE_RESULT",
-                  payload: results[a],
+                  payload: results[idx],
                 });
               });
 
-              npkill.getRecentModification(rawResult).then((lastModTime) => {
-                const a = results.findIndex((r) => r.path === rawResult);
-                if (a === -1) {
-                  throw new Error("Result not found.");
-                }
-                // Convert to days from today
-                const modificationTime = Math.floor(
-                  (new Date().getTime() / 1000 - lastModTime) / 86400
-                );
-                results[a] = { ...results[a], modificationTime };
-
-                clients.forEach((client) => {
-                  sendMessage(client, {
-                    type: "UPDATE_RESULT",
-                    payload: results[a],
+              const modOptions: GetFolderLastModificationOptions = {
+                path: found.path,
+              };
+              npkill
+                .getFolderLastModification(modOptions)
+                .then((modResult: GetFolderLastModificationResult) => {
+                  const idx2 = results.findIndex((r) => r.path === found.path);
+                  if (idx2 === -1) throw new Error("Result not found.");
+                  const modificationTime = Math.floor(
+                    (Date.now() / 1000 - modResult.timestamp) / 86400
+                  );
+                  results[idx2] = { ...results[idx2], modificationTime };
+                  clients.forEach((client) => {
+                    sendMessage(client, {
+                      type: "UPDATE_RESULT",
+                      payload: results[idx2],
+                    });
                   });
                 });
-              });
             })
           )
           .subscribe();
