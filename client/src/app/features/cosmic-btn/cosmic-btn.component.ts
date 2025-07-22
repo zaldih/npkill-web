@@ -13,20 +13,20 @@ import {
   standalone: true,
   selector: 'app-cosmic-btn',
   imports: [CommonModule],
-  template: `<canvas #canvas>Canvas not supported</canvas>`,
+  template: ` <div
+    #canvasContainer
+    style="height:56px; border-radius: 12px; overflow: hidden;"
+  >
+    <canvas #canvas>Canvas not supported</canvas>
+  </div>`,
 })
-export class CosmicBtnComponent implements OnInit, OnDestroy, AfterViewInit {
+export class CosmicBtnComponent implements OnInit, OnDestroy {
   @Input() text!: string;
   @ViewChild('canvas', { static: true })
   private canvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('canvasContainer', { static: true })
+  private canvasContainer!: ElementRef<HTMLDivElement>;
   private ctx!: CanvasRenderingContext2D;
-  private icons: {
-    x: number;
-    y: number;
-    size: number;
-    dx: number;
-    dy: number;
-  }[] = [];
   private particles: {
     x: number;
     y: number;
@@ -35,11 +35,13 @@ export class CosmicBtnComponent implements OnInit, OnDestroy, AfterViewInit {
     dy: number;
   }[] = [];
   private isInView = false;
-  private animationFrameId: number = 0;
-  private isClicked = false; // To track if the button was clicked
+  private animationFrameId = 0;
+  private isClicked = false;
   private observer!: IntersectionObserver;
-  private binX = 0; // Initial position of the bin
-  private binY = 25; // Y position of the bin
+  private centerOfCanvas = {
+    x: 0,
+    y: 0,
+  };
 
   constructor(private el: ElementRef) {}
 
@@ -50,7 +52,6 @@ export class CosmicBtnComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
     this.ctx = context;
-    this.initIcons();
 
     // Set up Intersection Observer
     this.observer = new IntersectionObserver((entries) => {
@@ -65,127 +66,115 @@ export class CosmicBtnComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     this.observer.observe(this.canvas.nativeElement);
+
+    this.setCanvasSize();
+    window.addEventListener('resize', this.setCanvasSize.bind(this)); // Update size on window resize
+    this.canvas.nativeElement.addEventListener(
+      'click',
+      this.handleClick.bind(this)
+    );
   }
 
   ngOnDestroy(): void {
     if (this.observer) {
       this.observer.disconnect();
     }
-  }
-
-  ngAfterViewInit(): void {
-    this.setCanvasSize();
-    window.addEventListener('resize', this.setCanvasSize.bind(this)); // Update size on window resize
-    this.canvas.nativeElement.addEventListener(
-      'click',
-      this.handleClick.bind(this),
-    ); // Add click listener
-  }
-
-  private initIcons(): void {
-    for (let i = 0; i < 5; i++) {
-      this.icons.push({
-        x: Math.random() * this.canvas.nativeElement.width,
-        y: Math.random() * this.canvas.nativeElement.height,
-        size: 15 + Math.random() * 10,
-        dx: (Math.random() - 0.5) * 2,
-        dy: (Math.random() - 0.5) * 2,
-      });
-    }
+    cancelAnimationFrame(this.animationFrameId);
   }
 
   private setCanvasSize(): void {
-    const parentWidth = this.el.nativeElement.offsetWidth;
-    const parentStyles = window.getComputedStyle(this.el.nativeElement);
-    const marginLeft = parseInt(parentStyles.paddingLeft, 10);
-    const marginRight = parseInt(parentStyles.paddingRight, 10);
-    const availableWidth = parentWidth - marginLeft - marginRight;
-    this.canvas.nativeElement.width = availableWidth;
-    this.canvas.nativeElement.height = availableWidth / 5;
+    const parentWidth = this.canvasContainer.nativeElement.offsetWidth;
+    const parentHeight = this.canvasContainer.nativeElement.offsetHeight;
+    this.canvas.nativeElement.width = parentWidth;
+    this.canvas.nativeElement.height = parentHeight;
+    this.centerOfCanvas = {
+      x: this.canvas.nativeElement.width / 2,
+      y: this.canvas.nativeElement.height / 2,
+    };
   }
 
   private startAnimation(): void {
     const animate = () => {
-      if (this.isClicked) {
-        this.animateParticles(); // Animate particles
-      }
+      this.ctx.clearRect(
+        0,
+        0,
+        this.canvas.nativeElement.width,
+        this.canvas.nativeElement.height
+      );
 
       // Set background
-      this.ctx.fillStyle = '#1a1a2e';
+      this.ctx.fillStyle = '#ff6961';
       this.ctx.fillRect(
         0,
         0,
         this.canvas.nativeElement.width,
-        this.canvas.nativeElement.height,
+        this.canvas.nativeElement.height
       );
 
-      // Draw floating folder icons
-      this.icons.forEach((icon) => {
-        this.ctx.fillStyle = 'white';
-        this.ctx.beginPath();
-        this.ctx.rect(icon.x, icon.y, icon.size, icon.size);
-        this.ctx.strokeStyle = 'white';
-        this.ctx.stroke();
-        this.ctx.closePath();
+      this.animateParticles();
 
-        icon.x += icon.dx;
-        icon.y += icon.dy;
-
-        // Bounce off the edges
-        if (icon.x < 0 || icon.x > this.canvas.nativeElement.width - icon.size)
-          icon.dx = -icon.dx;
-        if (icon.y < 0 || icon.y > this.canvas.nativeElement.height - icon.size)
-          icon.dy = -icon.dy;
-      });
-
-      if (!this.isClicked) {
-        // Draw text in the middle if not clicked
-        this.ctx.fillStyle = 'white';
-        this.ctx.font = 'bold 20px Arial';
-        const textWidth = this.ctx.measureText(this.text).width;
-        this.ctx.fillText(
-          this.text,
-          (this.canvas.nativeElement.width - textWidth) / 2,
-          this.canvas.nativeElement.height / 2,
-        );
-      }
-
-      // Draw the bin (left side)
-      this.ctx.fillStyle = 'gray';
-      this.ctx.beginPath();
-      this.ctx.rect(this.binX, this.binY, 30, 30);
-      this.ctx.fill();
-      this.ctx.closePath();
-
-      this.animationFrameId = requestAnimationFrame(animate); // Continue animation
+      this.animationFrameId = requestAnimationFrame(animate);
     };
 
     animate();
   }
 
   private animateParticles(): void {
-    // Generate fast-moving small particles when clicked
-    if (Math.random() < 0.1) {
+    while (this.particles.length < 10) {
+      const edge = Math.floor(Math.random() * 4);
+      let x = 0,
+        y = 0;
+
+      if (edge === 0) {
+        x = Math.random() * this.canvas.nativeElement.width;
+        y = 0; // Top edge
+      } else if (edge === 1) {
+        x = this.canvas.nativeElement.width;
+        y = Math.random() * this.canvas.nativeElement.height; // Right edge
+      } else if (edge === 2) {
+        x = Math.random() * this.canvas.nativeElement.width;
+        y = this.canvas.nativeElement.height; // Bottom edge
+      } else {
+        x = 0;
+        y = Math.random() * this.canvas.nativeElement.height; // Left edge
+      }
+
+      // Calculate the direction vector towards the center
+      const directionX = this.centerOfCanvas.x - x;
+      const directionY = this.centerOfCanvas.y - y;
+
+      // Calculate the magnitude of the direction vector
+      const magnitude = Math.sqrt(
+        directionX * directionX + directionY * directionY
+      );
+
+      if (magnitude === 0) {
+        continue;
+      }
+
+      // Normalize the direction vector
+      const normalizedDirectionX = directionX / magnitude;
+      const normalizedDirectionY = directionY / magnitude;
+
+      // Scale the direction vector by a desired speed
+      const speed = 2 + Math.random() * 3; // Adjust the speed as needed
+      const dx = normalizedDirectionX * speed;
+      const dy = normalizedDirectionY * speed;
+
       this.particles.push({
-        x: this.canvas.nativeElement.width / 2,
-        y: this.canvas.nativeElement.height / 2,
-        size: 2 + Math.random() * 2,
-        dx: (Math.random() - 0.5) * 5,
-        dy: (Math.random() - 0.5) * 5,
+        x: x,
+        y: y,
+        size: 1 + Math.random() * 2,
+        dx: dx,
+        dy: dy,
       });
     }
 
-    // Update particle positions
     this.particles.forEach((particle, index) => {
-      // Attract particles to the center
-      const dx = (this.canvas.nativeElement.width / 2 - particle.x) * 0.05;
-      const dy = (this.canvas.nativeElement.height / 2 - particle.y) * 0.05;
+      particle.x += particle.dx;
+      particle.y += particle.dy;
 
-      particle.x += dx;
-      particle.y += dy;
-      particle.size += 0.1; // Increase size to simulate folder
-
-      // Draw particles (folders)
+      // Draw particles
       this.ctx.fillStyle = 'white';
       this.ctx.beginPath();
       this.ctx.arc(particle.x, particle.y, particle.size, 0, 2 * Math.PI);
@@ -194,20 +183,12 @@ export class CosmicBtnComponent implements OnInit, OnDestroy, AfterViewInit {
 
       // Remove particles when they reach the center
       if (
-        Math.abs(particle.x - this.canvas.nativeElement.width / 2) < 2 &&
-        Math.abs(particle.y - this.canvas.nativeElement.height / 2) < 2
+        Math.abs(particle.x - this.centerOfCanvas.x) < 5 &&
+        Math.abs(particle.y - this.centerOfCanvas.y) < 5
       ) {
         this.particles.splice(index, 1);
       }
     });
-
-    // Move bin to center
-    if (this.binX < this.canvas.nativeElement.width / 2 - 15) {
-      this.binX += 2; // Speed of bin movement
-    }
-    if (this.binY < this.canvas.nativeElement.height / 2 - 15) {
-      this.binY += 2; // Speed of bin movement
-    }
   }
 
   private handleClick(): void {
