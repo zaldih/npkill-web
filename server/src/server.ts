@@ -8,110 +8,142 @@ import {
   GetFolderSizeResult,
   GetFolderLastModificationResult,
 } from "npkill";
-
 import { WebSocketServer, WebSocket } from "ws";
 import { NpkillResult } from "../../shared/npkill-result.interface.js";
 import { Message } from "../../shared/websocket/websocket-messages.interface.js";
-import { take, tap } from "rxjs";
+import { take, tap, Subject } from "rxjs";
 
-const app = express();
-const port = 2420;
+class NpkillServer {
+  private app = express();
+  private port = 2420;
+  private server = this.app.listen(this.port, () => {
+    console.log(`📦💥 Npkill server running on port ${this.port}`);
+  });
+  private wss = new WebSocketServer({ server: this.server });
+  private npkillStarted = false;
+  private clients: WebSocket[] = [];
+  private results: NpkillResult[] = [];
+  private destroy$ = new Subject<void>();
 
-const server = app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+  constructor() {
+    this.wss.on("connection", (ws: WebSocket) => {
+      console.log("New client connected");
+      this.clients = [...this.clients, ws];
 
-const wss = new WebSocketServer({ server });
+      if (!this.npkillStarted) {
+        this.startNpkill();
+        this.npkillStarted = true;
+      }
 
-let npkillStarted = false;
-let clients: WebSocket[] = [];
-let results: NpkillResult[] = [];
+      this.sendMessage(ws, { type: "NEW_RESULT", payload: this.results });
 
-wss.on("connection", (ws: WebSocket) => {
-  console.log("New client connected");
-  clients = [...clients, ws];
-
-  if (!npkillStarted) {
-    startNpkill();
-    npkillStarted = true;
+      ws.on("close", () => {
+        console.log("Client disconnected");
+        this.clients = this.clients.filter((client) => client !== ws);
+      });
+    });
   }
 
-  sendMessage(ws, { type: "NEW_RESULT", payload: results });
+  private startNpkill() {
+    const npkill = new Npkill();
+    const scanOptions: ScanOptions = {
+      rootPath: "/home/zaldih/projects",
+      target: "node_modules",
+      exclude: [".git"],
+    };
+    npkill
+      .startScan$(scanOptions)
+      .pipe(
+        tap((found: ScanFoundFolder) => {
+          const result: NpkillResult = {
+            path: found.path,
+            isDangeroud: false,
+            modificationTime: -1,
+            size: -1,
+            status: "live",
+          };
+          this.results = [...this.results, result];
+          this.clients.forEach((client) => {
+            this.sendMessage(client, { type: "NEW_RESULT", payload: [result] });
+          });
 
-  ws.on("close", () => {
-    console.log("Client disconnected");
-    clients = clients.filter((client) => client !== ws);
-  });
-});
-
-function startNpkill() {
-  const npkill = new Npkill();
-  const scanOptions: ScanOptions = {
-    rootPath: "/home/zaldih/projects",
-    target: "node_modules",
-    exclude: [".git"],
-  };
-  npkill
-    .startScan$(scanOptions)
-    .pipe(
-      tap((found: ScanFoundFolder) => {
-        const result: NpkillResult = {
-          path: found.path,
-          isDangeroud: false,
-          modificationTime: -1,
-          size: -1,
-          status: "live",
-        };
-        results = [...results, result];
-        clients.forEach((client) => {
-          sendMessage(client, { type: "NEW_RESULT", payload: [result] });
-        });
-
-        const sizeOptions: GetFolderSizeOptions = { path: found.path };
-        npkill
-          .getFolderSize$(sizeOptions)
-          .pipe(
-            take(1),
-            tap((sizeResult: GetFolderSizeResult) => {
-              const idx = results.findIndex((r) => r.path === found.path);
-              if (idx === -1) throw new Error("Result not found.");
-              results[idx] = { ...results[idx], size: sizeResult.size };
-              clients.forEach((client) => {
-                sendMessage(client, {
-                  type: "UPDATE_RESULT",
-                  payload: results[idx],
-                });
-              });
-
-              const modOptions: GetFolderLastModificationOptions = {
-                path: found.path,
-              };
-              npkill
-                .getFolderLastModification(modOptions)
-                .then((modResult: GetFolderLastModificationResult) => {
-                  const idx2 = results.findIndex((r) => r.path === found.path);
-                  if (idx2 === -1) throw new Error("Result not found.");
-                  const modificationTime = Math.floor(
-                    (Date.now() / 1000 - modResult.timestamp) / 86400
-                  );
-                  results[idx2] = { ...results[idx2], modificationTime };
-                  clients.forEach((client) => {
-                    sendMessage(client, {
-                      type: "UPDATE_RESULT",
-                      payload: results[idx2],
-                    });
+          const sizeOptions: GetFolderSizeOptions = { path: found.path };
+          npkill
+            .getFolderSize$(sizeOptions)
+            .pipe(
+              take(1),
+              tap((sizeResult: GetFolderSizeResult) => {
+                const idx = this.results.findIndex(
+                  (r) => r.path === found.path
+                );
+                if (idx === -1) throw new Error("Result not found.");
+                this.results[idx] = {
+                  ...this.results[idx],
+                  size: sizeResult.size,
+                };
+                this.clients.forEach((client) => {
+                  this.sendMessage(client, {
+                    type: "UPDATE_RESULT",
+                    payload: this.results[idx],
                   });
                 });
-            })
-          )
-          .subscribe();
-      })
-    )
-    .subscribe();
-}
 
-function sendMessage<T extends Message>(ws: WebSocket, message: T): void {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(message));
+                const modOptions: GetFolderLastModificationOptions = {
+                  path: found.path,
+                };
+                npkill
+                  .getFolderLastModification(modOptions)
+                  .then((modResult: GetFolderLastModificationResult) => {
+                    const idx2 = this.results.findIndex(
+                      (r) => r.path === found.path
+                    );
+                    if (idx2 === -1) throw new Error("Result not found.");
+                    const modificationTime = Math.floor(
+                      (Date.now() / 1000 - modResult.timestamp) / 86400
+                    );
+                    this.results[idx2] = {
+                      ...this.results[idx2],
+                      modificationTime,
+                    };
+                    this.clients.forEach((client) => {
+                      this.sendMessage(client, {
+                        type: "UPDATE_RESULT",
+                        payload: this.results[idx2],
+                      });
+                    });
+                  });
+              })
+            )
+            .subscribe();
+        })
+      )
+      .subscribe();
+  }
+
+  private sendMessage<T extends Message>(ws: WebSocket, message: T): void {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(message));
+    }
+  }
+
+  destroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.clients.forEach((ws) => ws.close());
+    this.server.close(() => {
+      process.exit(0);
+    });
   }
 }
+
+const npkillServer = new NpkillServer();
+
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully");
+  npkillServer.destroy();
+});
+
+process.on("SIGINT", () => {
+  console.log("SIGINT received, shutting down gracefully");
+  npkillServer.destroy();
+});
