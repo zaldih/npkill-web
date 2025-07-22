@@ -7,7 +7,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { NpkillResult } from '../../../../../../shared/npkill-result.interface';
-import { MatCard, MatCardContent } from '@angular/material/card';
+import { MatCard, MatCardContent, MatCardFooter } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton, MatFabButton } from '@angular/material/button';
 import { MatProgressBar } from '@angular/material/progress-bar';
@@ -26,6 +26,7 @@ import { CosmicBtnComponent } from '../../cosmic-btn/cosmic-btn.component';
     MatProgressBar,
     HumanSizePipe,
     CosmicBtnComponent,
+    MatCardFooter,
   ],
   templateUrl: './result-card.component.html',
   styleUrl: './result-card.component.scss',
@@ -36,6 +37,7 @@ export class ResultCardComponent implements OnChanges, OnInit {
   projectParentPath: string = '';
   projectName: string = '';
   target: string = '';
+  random = Math.random();
 
   ngOnInit() {
     //    this.splitPath(this.result.path);
