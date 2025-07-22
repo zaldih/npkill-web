@@ -174,6 +174,10 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
       particle.x += particle.dx;
       particle.y += particle.dy;
 
+      const distanceX = particle.x - this.centerOfCanvas.x;
+      const distanceY = particle.y - this.centerOfCanvas.y;
+      const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+
       // Draw particles
       this.ctx.fillStyle = 'white';
       this.ctx.beginPath();
@@ -182,10 +186,7 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
       this.ctx.closePath();
 
       // Remove particles when they reach the center
-      if (
-        Math.abs(particle.x - this.centerOfCanvas.x) < 5 &&
-        Math.abs(particle.y - this.centerOfCanvas.y) < 5
-      ) {
+      if (distance < 5) {
         this.particles.splice(index, 1);
       }
     });

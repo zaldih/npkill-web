@@ -1,7 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ResultCardComponent } from './features/results/result-card/result-card.component';
-import { NavbarComponent } from './features/navbar/navbar.component';
 import { SidenavComponent } from './features/sidenav/sidenav.component';
 import { WsService } from './services/ws.service';
 import { tap } from 'rxjs';
@@ -14,12 +12,7 @@ import {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    RouterOutlet,
-    ResultCardComponent,
-    NavbarComponent,
-    SidenavComponent,
-  ],
+  imports: [RouterOutlet, SidenavComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })

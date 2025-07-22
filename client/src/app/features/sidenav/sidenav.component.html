@@ -1,5 +1,20 @@
 <mat-drawer-container autosize>
   <mat-drawer mode="side" opened class="sidenav-drawer">
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        height: 100px;
+        background-color: #f74e4e;
+      "
+    >
+      <img
+        style="width: 100%"
+        src="/npkill-web-text-clean.svg"
+        alt="npkill logo"
+      />
+    </div>
+
     <app-stats></app-stats>
 
     <mat-action-list>
@@ -12,6 +27,7 @@
       </button>
     </mat-action-list>
   </mat-drawer>
+
   <mat-drawer-content class="sidenav-content">
     <ng-content />
   </mat-drawer-content>
