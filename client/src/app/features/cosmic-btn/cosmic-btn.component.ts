@@ -35,6 +35,7 @@ import {
           style="width: 96px; height: 96px; display:inline-block; background-image: url('/black hole tile.png');image-rendering: pixelated; position: absolute; top: -22px; left: -48px;
     background-size: cover;
       "
+          [ngClass]="{ sseccretsecccret }"
           [ngStyle]="{
             backgroundPositionX: blackHoleOffset + 'px'
           }"
@@ -70,6 +71,9 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
 
   blackHoleOffset = 0;
   dissapearBanner = false;
+
+  sseccretsecccret =
+    Math.random() < (new Date().getDay() === 1 ? 0.025 : 0.005);
 
   constructor(private el: ElementRef) {}
 

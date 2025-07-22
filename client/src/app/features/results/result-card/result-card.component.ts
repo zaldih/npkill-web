@@ -51,6 +51,10 @@ export class ResultCardComponent implements OnChanges, OnInit {
     this.isDeleting = true;
   }
 
+  get bigSizeImg(): string {
+    return `/${'stu'}${'ff'}/${'oh'}-${'go'}${'d'}-${'why'}.p${'ng'}`;
+  }
+
   private splitPath(path: string) {
     const parts = path.split('/').filter(Boolean);
 

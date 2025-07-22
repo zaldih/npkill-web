@@ -33,7 +33,12 @@
       <div style="width: 1px; background-color: bisque"></div>
 
       <div class="footer-stat-item">
-        <div style="font-size: 1.3em">{{ result().size | humanSize }}</div>
+        <div style="display: flex; gap: 0.4em; align-items: center">
+          @if(result().size > 2400000000){
+          <img style="height: 30px" [src]="bigSizeImg" />
+          }
+          {{ result().size | humanSize }}
+        </div>
       </div>
     </div>
   </mat-card-footer>
