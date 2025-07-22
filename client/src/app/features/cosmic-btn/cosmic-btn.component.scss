@@ -1,0 +1,109 @@
+.root {
+  position: relative;
+}
+
+.canvas-container {
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  animation: appear-root 0.2s ease-out 0s 1 normal forwards;
+  margin-right: auto;
+
+  &.dissapear {
+    animation: dissapear-root 0.5s ease 0s 1 normal forwards;
+  }
+}
+
+.black-hole {
+  opacity: 0;
+  animation: appear-black-hole 0.3s ease-out 0.1s 1 normal forwards;
+}
+
+.deleting-text {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 0.6em;
+  color: #fff;
+  text-align: center;
+  animation: blink 2s infinite;
+}
+
+.deleted-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  font-size: 1.6em;
+  animation: deleted-text-appear 0.5s ease-out 0.1s 1 normal forwards;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes appear-root {
+  0% {
+    opacity: 0;
+  }
+  1% {
+    width: 0;
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    width: 100%;
+  }
+}
+
+@keyframes dissapear-root {
+  0% {
+    opacity: 1;
+    width: 100%;
+  }
+  99% {
+    width: 0;
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    width: 0;
+  }
+}
+
+@keyframes appear-black-hole {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(1);
+  }
+}
+
+@keyframes deleted-text-appear {
+  0% {
+    transform: scale(0.4);
+  }
+  80% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

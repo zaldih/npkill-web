@@ -1,51 +1,38 @@
 <mat-card appearance="outlined" class="card" style="overflow: hidden">
   <mat-card-content class="card-content">
-    <div class="project-name">{{ projectName }}</div>
-    <div class="project-path">{{ projectParentPath }}/</div>
-
-    @if (result().modificationTime >= 0) {
-    <div class="last-mod-stat">
-      Used <span>{{ result().modificationTime }} days</span> ago.
+    <div>
+      <div class="project-name">{{ projectName }}</div>
+      <div class="project-path">{{ projectParentPath }}/</div>
     </div>
-    } @if (result().size === -1 || result().modificationTime === -1) {
-    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-    } @if(random < 0.3) {
-    <app-cosmic-btn [text]="result().size | humanSize" />
-    }
-    <button mat-fab extended aria-label="Remove" class="remove-btn">
-      <mat-icon>delete</mat-icon>
-      @if (result().size > 0) {
-      <span class="size-stat">{{ result().size | humanSize }}</span>
+
+    <div style="margin: 8px 0; margin-top: auto">
+      @if(!isDeleting){
+      <button class="remove-btn" (click)="remove()">
+        <mat-icon>delete</mat-icon>
+        Delete
+      </button>
+      }@else {
+      <app-cosmic-btn [text]="result().size | humanSize" />
       }
-    </button>
+    </div>
+
+    @if (result().size === -1 || result().modificationTime === -1) {
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    }@else {
+    <div style="height: 4px"></div>
+    }
   </mat-card-content>
 
-  <mat-card-footer>
+  <mat-card-footer style="margin-top: auto">
     <div style="width: 100%; display: flex; min-height: 2.2em">
-      <div
-        style="
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          background-color: green;
-        "
-      >
+      <div class="footer-stat-item">
         <div style="font-size: 1.3em">{{ result().modificationTime }} days</div>
         <!-- <div style="font-size: 0.7em">last usage</div> -->
       </div>
 
-      <div
-        style="
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          background-color: orange;
-        "
-      >
+      <div style="width: 1px; background-color: bisque"></div>
+
+      <div class="footer-stat-item">
         <div style="font-size: 1.3em">{{ result().size | humanSize }}</div>
       </div>
     </div>

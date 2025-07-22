@@ -9,9 +9,9 @@ export class HumanSizePipe implements PipeTransform {
     if (value < 1024) {
       return `${value} B`;
     } else if (value < 1024 * 1024) {
-      return `${(value / 1024).toFixed(2)} KB`;
+      return `${(value / 1024).toFixed(0)} KB`;
     } else if (value < 1024 * 1024 * 1024) {
-      return `${(value / (1024 * 1024)).toFixed(2)} MB`;
+      return `${(value / (1024 * 1024)).toFixed(0)} MB`;
     } else {
       return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
     }

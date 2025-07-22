@@ -9,7 +9,6 @@ import {
 import { NpkillResult } from '../../../../../../shared/npkill-result.interface';
 import { MatCard, MatCardContent, MatCardFooter } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';
-import { MatButton, MatFabButton } from '@angular/material/button';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { HumanSizePipe } from '../../../shared/directives/human-size.pipe';
 import { CosmicBtnComponent } from '../../cosmic-btn/cosmic-btn.component';
@@ -21,8 +20,6 @@ import { CosmicBtnComponent } from '../../cosmic-btn/cosmic-btn.component';
     MatCard,
     MatCardContent,
     MatIcon,
-    MatButton,
-    MatFabButton,
     MatProgressBar,
     HumanSizePipe,
     CosmicBtnComponent,
@@ -37,7 +34,8 @@ export class ResultCardComponent implements OnChanges, OnInit {
   projectParentPath: string = '';
   projectName: string = '';
   target: string = '';
-  random = Math.random();
+
+  isDeleting = false;
 
   ngOnInit() {
     //    this.splitPath(this.result.path);
@@ -47,6 +45,10 @@ export class ResultCardComponent implements OnChanges, OnInit {
     if (changes['result'] && this.result().path) {
       this.splitPath(this.result().path);
     }
+  }
+
+  remove() {
+    this.isDeleting = true;
   }
 
   private splitPath(path: string) {

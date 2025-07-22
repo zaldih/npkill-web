@@ -6,26 +6,42 @@ import {
   OnInit,
   ViewChild,
   OnDestroy,
-  AfterViewInit,
 } from '@angular/core';
 
 @Component({
   standalone: true,
   selector: 'app-cosmic-btn',
   imports: [CommonModule],
-  template: ` <div
-    #canvasContainer
-    style="height:48px; border-radius: 12px; overflow: hidden; position: relative;"
-  >
+  styleUrls: ['./cosmic-btn.component.scss'],
+  template: ` <div class="root">
+    @if(dissapearBanner) {
+    <div class="deleted-text">Deleted</div>
+    }
+
     <div
-      style="width: 96px; height: 96px; display:inline-block; background-image: url('/black hole tile.png');image-rendering: pixelated; position: absolute; top: -22px; left: -48px;
+      #canvasContainer
+      class="canvas-container"
+      [ngClass]="{ dissapear: dissapearBanner }"
+    >
+      @if(particleGeneration) {
+      <div class="deleting-text">
+        <div>Deleting...</div>
+      </div>
+      }
+
+      <div>
+        <div
+          class="black-hole"
+          style="width: 96px; height: 96px; display:inline-block; background-image: url('/black hole tile.png');image-rendering: pixelated; position: absolute; top: -22px; left: -48px;
     background-size: cover;
       "
-      [ngStyle]="{
-        backgroundPositionX: blackHoleOffset + 'px'
-      }"
-    ></div>
-    <canvas #canvas>Canvas not supported</canvas>
+          [ngStyle]="{
+            backgroundPositionX: blackHoleOffset + 'px'
+          }"
+        ></div>
+        <canvas #canvas>Canvas not supported</canvas>
+      </div>
+    </div>
   </div>`,
 })
 export class CosmicBtnComponent implements OnInit, OnDestroy {
@@ -50,27 +66,26 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
     x: 0,
     y: 0,
   };
+  particleGeneration = false;
 
   blackHoleOffset = 0;
+  dissapearBanner = false;
 
   constructor(private el: ElementRef) {}
 
   ngOnInit(): void {
+    setTimeout(() => {
+      this.dissapear();
+    }, Math.random() * 1000 + 8000);
     setInterval(() => {
       const tileWidth = 96;
       const numberOfTiles = 18;
-      const totalTilesetWidth = numberOfTiles * tileWidth; // Esto es 900 en tu caso
-
-      // Mueve 24px a la derecha
+      const totalTilesetWidth = numberOfTiles * tileWidth;
       this.blackHoleOffset = this.blackHoleOffset + tileWidth;
 
-      // Si el offset es >= 0, significa que ha llegado al final del ciclo (o lo ha pasado),
-      // entonces lo reseteamos al inicio del rango negativo.
       if (this.blackHoleOffset > 0) {
         this.blackHoleOffset =
           -totalTilesetWidth + (this.blackHoleOffset % totalTilesetWidth);
-        // O una versión más simple si sabemos que solo se va a pasar por poco:
-        // this.blackHoleOffset = -totalTilesetWidth + this.blackHoleOffset;
       }
     }, 100);
     const context = this.canvas.nativeElement.getContext('2d');
@@ -80,11 +95,13 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
     }
     this.ctx = context;
 
-    // Set up Intersection Observer
     this.observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         this.isInView = entry.isIntersecting;
         if (this.isInView) {
+          setTimeout(() => {
+            this.particleGeneration = true;
+          }, 300);
           this.startAnimation();
         } else {
           cancelAnimationFrame(this.animationFrameId);
@@ -107,6 +124,13 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
       this.observer.disconnect();
     }
     cancelAnimationFrame(this.animationFrameId);
+  }
+
+  dissapear(): void {
+    this.particleGeneration = false;
+    setTimeout(() => {
+      this.dissapearBanner = true;
+    }, 1000);
   }
 
   private setCanvasSize(): void {
@@ -147,18 +171,16 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
   }
 
   private animateParticles(): void {
-    while (this.particles.length < 10) {
+    while (this.particleGeneration && this.particles.length < 10) {
       let x = 0;
       let y = 0;
 
       x = this.canvas.nativeElement.width;
       y = Math.random() * this.canvas.nativeElement.height; // Right edge
 
-      // Calculate the direction vector towards the center
       const directionX = 0 - x;
       const directionY = this.centerOfCanvas.y - y;
 
-      // Calculate the magnitude of the direction vector
       const magnitude = Math.sqrt(
         directionX * directionX + directionY * directionY
       );
@@ -167,12 +189,10 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
         continue;
       }
 
-      // Normalize the direction vector
       const normalizedDirectionX = directionX / magnitude;
       const normalizedDirectionY = directionY / magnitude;
 
-      // Scale the direction vector by a desired speed
-      const speed = 2 + Math.random() * 3; // Adjust the speed as needed
+      const speed = 2 + Math.random() * 3;
       const dx = normalizedDirectionX * speed;
       const dy = normalizedDirectionY * speed;
 
@@ -200,7 +220,6 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
       this.ctx.fill();
       this.ctx.closePath();
 
-      // Remove particles when they reach the center
       if (particle.x < 5) {
         this.particles.splice(index, 1);
       }
@@ -209,6 +228,6 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
 
   private handleClick(): void {
     this.isClicked = true;
-    this.text = ''; // Clear the text when clicked
+    this.text = '';
   }
 }
