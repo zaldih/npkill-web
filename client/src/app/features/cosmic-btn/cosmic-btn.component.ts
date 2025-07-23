@@ -7,11 +7,12 @@ import {
   ViewChild,
   OnDestroy,
 } from '@angular/core';
+import { SpriteAnimatorComponent } from '../sprite-animator/sprite-animator.component';
 
 @Component({
   standalone: true,
   selector: 'app-cosmic-btn',
-  imports: [CommonModule],
+  imports: [CommonModule, SpriteAnimatorComponent],
   styleUrls: ['./cosmic-btn.component.scss'],
   template: ` <div class="root">
     @if(dissapearBanner) {
@@ -30,16 +31,17 @@ import {
       }
 
       <div>
-        <div
-          class="black-hole"
-          style="width: 96px; height: 96px; display:inline-block; background-image: url('/black hole tile.png');image-rendering: pixelated; position: absolute; top: -22px; left: -48px;
-    background-size: cover;
-      "
-          [ngClass]="{ sseccretsecccret }"
-          [ngStyle]="{
-            backgroundPositionX: blackHoleOffset + 'px'
-          }"
-        ></div>
+        <div class="black-hole" [ngClass]="{ sseccretsecccret }">
+          <app-sprite-animator
+            [tileImage]="'/black hole tile.png'"
+            [tileWidth]="96"
+            [numberOfTiles]="19"
+            [size]="100"
+            [fps]="12"
+            [reverse]="true"
+            *ngIf="!sseccretsecccret"
+          />
+        </div>
         <canvas #canvas>Canvas not supported</canvas>
       </div>
     </div>

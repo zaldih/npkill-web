@@ -1,7 +1,19 @@
 <mat-card appearance="outlined" class="card" style="overflow: hidden">
   <mat-card-content class="card-content">
     <div>
-      <div class="project-name">{{ projectName }}</div>
+      <div style="display: flex; gap: 14px; align-items: top">
+        <div class="project-name">{{ projectName }}</div>
+
+        <div style="margin-left: auto" class="asdfas">
+          <app-sprite-animator
+            [tileImage]="'/planets/jupiter-tile.png'"
+            [tileWidth]="32"
+            [numberOfTiles]="8"
+            [size]="32"
+            [fps]="2"
+          />
+        </div>
+      </div>
       <div class="project-path">{{ projectParentPath }}/</div>
     </div>
 

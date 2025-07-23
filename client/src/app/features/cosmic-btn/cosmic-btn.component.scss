@@ -17,6 +17,9 @@
 
 .black-hole {
   opacity: 0;
+  position: absolute;
+  top: -22px;
+  left: -48px;
   animation: appear-black-hole 0.3s ease-out 0.1s 1 normal forwards;
 }
 
@@ -50,7 +53,7 @@
   height: 52px !important;
   left: -10px !important;
   top: 0px !important;
-  background-position-x: 0 !important;
+  background-position-x: -10px !important;
 }
 
 @keyframes blink {
