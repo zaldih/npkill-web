@@ -1,0 +1,31 @@
+<h1>Summary</h1>
+
+<div style="max-width: 500px">
+  <div style="margin-bottom: 3em">
+    @if(summaryData()){
+    <app-summary-card
+      id="summaryCard"
+      [summary]="summaryData()"
+      [options]="options()"
+    />
+
+    <button
+      class="pixel-btn"
+      style="margin: auto; margin-top: 1em"
+      (click)="export()"
+    >
+      <img src="/icons/share.png" alt="Share icon" />
+      Share
+    </button>
+    }
+  </div>
+
+  <mat-accordion>
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title> Options </mat-panel-title>
+      </mat-expansion-panel-header>
+      <app-summary-options (optionsChange)="onOptionsChange($event)" />
+    </mat-expansion-panel>
+  </mat-accordion>
+</div>

@@ -5,7 +5,6 @@ import {
   MatDrawerContent,
 } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
-import { MatIcon } from '@angular/material/icon';
 import { RouterModule } from '@angular/router';
 import { StatsComponent } from '../stats/stats.component';
 
@@ -18,7 +17,6 @@ import { StatsComponent } from '../stats/stats.component';
     MatDrawerContainer,
     MatDrawerContent,
     MatListModule,
-    MatIcon,
     StatsComponent,
   ],
   templateUrl: './sidenav.component.html',

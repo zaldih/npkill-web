@@ -1,0 +1,17 @@
+.pixel-btn {
+  background-color: #f74e4e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:hover {
+    background-color: darken(#f74e4e, 5%);
+  }
+}
