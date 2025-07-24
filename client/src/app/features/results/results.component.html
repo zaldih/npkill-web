@@ -1,2 +1,13 @@
 <app-result-toolbar (searchChanged)="onSearchChanged($event)" />
+@if (haveResults && isScanning()) {
+<div style="margin-bottom: 1em">
+  <app-scanning [isBanner]="true" />
+</div>
+} @if(!haveResults && isScanning()) {
+<div style="margin-top: 120px">
+  <app-scanning />
+</div>
+
+}@else {
 <app-result-card-shelf [search]="search" />
+}

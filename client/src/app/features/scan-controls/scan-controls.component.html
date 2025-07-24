@@ -1,4 +1,8 @@
-<form [formGroup]="form" class="w-full flex flex-col gap-4 p-4">
+<form
+  [formGroup]="form"
+  class="w-full flex flex-col gap-4 p-4"
+  style="padding: 0 16px"
+>
   <!-- Root Path -->
   <mat-form-field appearance="outline">
     <mat-label>Root Path</mat-label>
@@ -62,14 +66,13 @@
     >Exclude Hidden Files</mat-checkbox
   >
 
-  <!-- Start/Stop Button -->
   <button
-    mat-raised-button
-    color="primary"
-    [ngStyle]="{ width: '100%' }"
+    class="pixel-btn"
+    style="margin: auto; margin-top: 1em; width: 100%"
     (click)="isScanning() ? stopScan() : startScan()"
-    [disabled]="form.invalid"
+    [disabled]="form.invalid || isScanning()"
   >
-    {{ isScanning() ? "Stop" : "Start Scan" }}
+    <img src="/rocket/rocket-stand.png" alt="Rocket icon" />
+    {{ isScanning() ? "running..." : "Start Scan" }}
   </button>
 </form>
