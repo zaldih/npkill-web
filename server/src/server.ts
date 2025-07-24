@@ -3,11 +3,7 @@ import { Server } from "node:http";
 import {
   Npkill,
   ScanOptions,
-  ScanFoundFolder,
-  GetFolderSizeOptions,
   GetFolderLastModificationOptions,
-  GetFolderSizeResult,
-  GetFolderLastModificationResult,
   LogEntry,
 } from "npkill";
 import { WebSocketServer, WebSocket } from "ws";
@@ -16,7 +12,7 @@ import {
   IncomingWsMessage,
   OutgoingWsMessage,
 } from "../../shared/websocket/index.js";
-import { take, tap, Subject } from "rxjs";
+import { take, tap, Subject, finalize } from "rxjs";
 import { ServerState } from "../../shared/app-state.interface.js";
 import { homedir } from "node:os";
 import { FilesService } from "./files.service.js";
@@ -128,24 +124,19 @@ class NpkillServer {
   }
 
   private startNpkill(scanOptions: ScanOptions): void {
-    console.log(
-      "Starting new scan with options: " + JSON.stringify(scanOptions)
-    );
+    console.log("[Npkill] Starting new scan:", scanOptions);
+
     this.serverState.isScanning = true;
     this.results = [];
     this.resetStats();
     this.npkill = new Npkill();
+
     this.npkill
       .getLogs$()
       .pipe(
         tap((log) => {
           this.logs = log;
-          this.clients.forEach((client) => {
-            this.sendMessage(client, {
-              type: "LOG",
-              payload: { message: log },
-            });
-          });
+          this.broadcast({ type: "LOG", payload: { message: log } });
         })
       )
       .subscribe();
@@ -153,97 +144,82 @@ class NpkillServer {
     this.npkill
       .startScan$(scanOptions)
       .pipe(
-        tap((found) => {
-          const result: NpkillResult = {
-            path: found.path,
-            isDangerous: this.npkill!.getFileService().isDangerous(found.path),
-            modificationTime: -1,
-            size: -1,
-            status: "live",
-          };
-
-          if (result.isDangerous && this.searchLocalConfig.excludeHidden) {
-            return;
-          }
-
-          this.results = [...this.results, result];
-          this.clients.forEach((client) => {
-            this.sendMessage(client, { type: "NEW_RESULT", payload: [result] });
-          });
-
-          if (this.searchLocalConfig.excludeHidden && result.isDangerous) {
-            return;
-          }
-          const sizeOptions: GetFolderSizeOptions = { path: found.path };
-          this.npkill!.getFolderSize$(sizeOptions)
-            .pipe(
-              take(1),
-              tap((sizeResult: GetFolderSizeResult) => {
-                const idx = this.results.findIndex(
-                  (r) => r.path === found.path
-                );
-                if (idx === -1) throw new Error("Result not found.");
-                this.results[idx] = {
-                  ...this.results[idx],
-                  size: sizeResult.size,
-                };
-                this.updateStats();
-                this.clients.forEach((client) => {
-                  this.sendMessage(client, {
-                    type: "UPDATE_RESULT",
-                    payload: this.results[idx],
-                  });
-                });
-
-                const modOptions: GetFolderLastModificationOptions = {
-                  path: found.path,
-                };
-                this.npkill!.getFolderLastModification(modOptions).then(
-                  (modResult: GetFolderLastModificationResult) => {
-                    const idx2 = this.results.findIndex(
-                      (r) => r.path === found.path
-                    );
-                    if (idx2 === -1) throw new Error("Result not found.");
-                    const modificationTime = Math.floor(
-                      (Date.now() / 1000 - modResult.timestamp) / 86400
-                    );
-                    this.results[idx2] = {
-                      ...this.results[idx2],
-                      modificationTime,
-                    };
-                    this.clients.forEach((client) => {
-                      this.sendMessage(client, {
-                        type: "UPDATE_RESULT",
-                        payload: this.results[idx2],
-                      });
-                    });
-                  }
-                );
-              })
-            )
-            .subscribe();
-        }),
-        tap({
-          complete: () => {
-            this.serverState.isScanning = false;
-            console.log("Scan completed");
-            this.clients.forEach((client) => {
-              this.sendMessage(client, {
-                type: "SCAN_END",
-                payload: null,
-              });
-            });
-            this.serverState.isScanning = false;
-            this.clients.forEach((client) => {
-              this.sendMessage(client, {
-                type: "SERVER_STATE",
-                payload: this.serverState,
-              });
-            });
-          },
-        })
+        tap((found) => this.handleFoundPath(found)),
+        finalize(() => this.onScanComplete())
       )
       .subscribe();
+  }
+
+  private handleFoundPath(found: { path: string }): void {
+    const isDangerous = this.npkill!.getFileService().isDangerous(found.path);
+
+    if (this.searchLocalConfig.excludeHidden && isDangerous) return;
+
+    const result: NpkillResult = {
+      path: found.path,
+      isDangerous,
+      modificationTime: -1,
+      size: -1,
+      status: "live",
+    };
+
+    this.results = [...this.results, result];
+    this.broadcast({ type: "NEW_RESULT", payload: [result] });
+
+    this.npkill!.getFolderSize$({ path: found.path })
+      .pipe(
+        take(1),
+        tap((sizeResult) => this.updateResultSize(found.path, sizeResult.size))
+      )
+      .subscribe();
+  }
+
+  private updateResultSize(path: string, size: number): void {
+    const idx = this.results.findIndex((r) => r.path === path);
+    if (idx === -1)
+      return console.error(`[Npkill] Result not found for ${path}`);
+
+    this.results[idx] = { ...this.results[idx], size };
+    this.updateStats();
+    this.broadcast({ type: "UPDATE_RESULT", payload: this.results[idx] });
+
+    const modOptions: GetFolderLastModificationOptions = { path };
+    this.npkill!.getFolderLastModification(modOptions)
+      .then((modResult) =>
+        this.updateResultModificationTime(path, modResult.timestamp)
+      )
+      .catch((err) =>
+        console.error(
+          `[Npkill] Failed to get modification time for ${path}`,
+          err
+        )
+      );
+  }
+
+  private updateResultModificationTime(path: string, timestamp: number): void {
+    const idx = this.results.findIndex((r) => r.path === path);
+    if (idx === -1)
+      return console.error(`[Npkill] Result not found for ${path}`);
+
+    const modificationTime = Math.floor(
+      (Date.now() / 1000 - timestamp) / 86400
+    );
+    this.results[idx] = { ...this.results[idx], modificationTime };
+    this.broadcast({ type: "UPDATE_RESULT", payload: this.results[idx] });
+  }
+
+  private onScanComplete(): void {
+    console.log("[Npkill] Scan completed");
+
+    this.serverState.isScanning = false;
+    this.broadcast({ type: "SCAN_END", payload: null });
+    this.broadcast({ type: "SERVER_STATE", payload: this.serverState });
+  }
+
+  private broadcast(message: OutgoingWsMessage): void {
+    this.clients.forEach((client) => {
+      this.sendMessage(client, message);
+    });
   }
 
   private sendMessage<T extends OutgoingWsMessage>(
