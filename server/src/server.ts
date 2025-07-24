@@ -1,4 +1,5 @@
 import express from "express";
+import { Server } from "node:http";
 import {
   Npkill,
   ScanOptions,
@@ -11,40 +12,97 @@ import {
 } from "npkill";
 import { WebSocketServer, WebSocket } from "ws";
 import { NpkillResult } from "../../shared/npkill-result.interface.js";
-import { Message } from "../../shared/websocket/websocket-messages.interface.js";
+import {
+  IncomingWsMessage,
+  OutgoingWsMessage,
+} from "../../shared/websocket/index.js";
 import { take, tap, Subject } from "rxjs";
+import { ServerState } from "../../shared/app-state.interface.js";
+import { homedir } from "node:os";
+import { FilesService } from "./files.service.js";
 
 class NpkillServer {
   private app = express();
   private port = 2420;
   private onlyLocalhost = true;
-  private server = this.app.listen(
-    this.port,
-    this.onlyLocalhost ? "127.0.0.1" : "",
-    () => {
-      console.log(`📦💥 Npkill server running on port ${this.port}`);
-    }
-  );
-  private wss = new WebSocketServer({ server: this.server });
-  private npkillStarted = false;
+  private server!: Server;
+  private wss!: WebSocketServer;
   private clients: WebSocket[] = [];
   private results: NpkillResult[] = [];
   private logs: LogEntry[] = [];
+  private searchLocalConfig = {
+    excludeHidden: true,
+  };
+  private serverState: ServerState = {
+    isScanning: false,
+    settings: {
+      rootPath: homedir(),
+      targetDirs: ["node_modules"],
+      excludePattern: [".git"],
+      excludeHidden: true,
+    },
+    information: {
+      userHomePath: homedir(),
+      npkillWebVersion: "0.0.0-dev",
+    },
+    storage: {
+      initialDiskSize: 0,
+    },
+  };
+
   private destroy$ = new Subject<void>();
 
-  constructor() {
+  constructor(private readonly filesService: FilesService) {
+    this.initializeServer().then(() => {
+      this.initializeSocketListeners();
+    });
+  }
+
+  private async initializeServer() {
+    const host = this.onlyLocalhost ? "127.0.0.1" : "";
+    this.serverState.storage.initialDiskSize =
+      await this.filesService.getTotalDiskSize();
+    this.server = this.app.listen(this.port, host, () => {
+      console.log(`📦💥 Npkill server running on port ${this.port} (${host})`);
+    });
+    this.wss = new WebSocketServer({ server: this.server });
+  }
+
+  private initializeSocketListeners() {
     this.wss.on("connection", (ws: WebSocket) => {
       console.log("New client connected");
       this.clients = [...this.clients, ws];
 
-      if (!this.npkillStarted) {
-        this.startNpkill();
-        this.npkillStarted = true;
-      }
-
+      this.sendMessage(ws, { type: "SERVER_STATE", payload: this.serverState });
       this.sendMessage(ws, { type: "NEW_RESULT", payload: this.results });
+      this.sendMessage(ws, { type: "LOG", payload: { message: this.logs } });
 
-      this.sendMessage(ws, { type: "LOG", payload: this.logs });
+      ws.on("message", (wsMessage: string) => {
+        try {
+          const message: IncomingWsMessage = JSON.parse(wsMessage);
+          if (message.type === "START_SCAN") {
+            const { rootPath, targetDirs, excludePattern, excludeHidden } =
+              message.payload;
+            const scanOptions: ScanOptions = {
+              rootPath,
+              target: targetDirs[0],
+              exclude: excludePattern,
+            };
+            this.searchLocalConfig.excludeHidden = excludeHidden;
+            this.serverState.settings = {
+              rootPath,
+              targetDirs,
+              excludePattern,
+              excludeHidden,
+            };
+            this.startNpkill(scanOptions);
+          } else if (message.type === "STOP_SCAN") {
+            console.warn("// TODO stop need to be implemented in npkill core.");
+          }
+        } catch (error) {
+          console.error("Error processing ws message:", error);
+        }
+      });
 
       ws.on("close", () => {
         console.log("Client disconnected");
@@ -53,20 +111,22 @@ class NpkillServer {
     });
   }
 
-  private startNpkill() {
+  private startNpkill(scanOptions: ScanOptions): void {
+    console.log(
+      "Starting new scan with options: " + JSON.stringify(scanOptions)
+    );
+    this.results = [];
     const npkill = new Npkill();
-    const scanOptions: ScanOptions = {
-      rootPath: "/home/zaldih/projects",
-      target: "node_modules",
-      exclude: [".git"],
-    };
     npkill
       .getLogs$()
       .pipe(
         tap((log) => {
           this.logs = log;
           this.clients.forEach((client) => {
-            this.sendMessage(client, { type: "LOG", payload: log });
+            this.sendMessage(client, {
+              type: "LOG",
+              payload: { message: log },
+            });
           });
         })
       )
@@ -75,19 +135,27 @@ class NpkillServer {
     npkill
       .startScan$(scanOptions)
       .pipe(
-        tap((found: ScanFoundFolder) => {
+        tap((found) => {
           const result: NpkillResult = {
             path: found.path,
-            isDangeroud: false,
+            isDangerous: npkill.getFileService().isDangerous(found.path),
             modificationTime: -1,
             size: -1,
             status: "live",
           };
+
+          if (result.isDangerous && this.searchLocalConfig.excludeHidden) {
+            return;
+          }
+
           this.results = [...this.results, result];
           this.clients.forEach((client) => {
             this.sendMessage(client, { type: "NEW_RESULT", payload: [result] });
           });
 
+          if (this.searchLocalConfig.excludeHidden && result.isDangerous) {
+            return;
+          }
           const sizeOptions: GetFolderSizeOptions = { path: found.path };
           npkill
             .getFolderSize$(sizeOptions)
@@ -141,7 +209,10 @@ class NpkillServer {
       .subscribe();
   }
 
-  private sendMessage<T extends Message>(ws: WebSocket, message: T): void {
+  private sendMessage<T extends OutgoingWsMessage>(
+    ws: WebSocket,
+    message: T
+  ): void {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message));
     }
@@ -157,7 +228,8 @@ class NpkillServer {
   }
 }
 
-const npkillServer = new NpkillServer();
+const filesService = new FilesService();
+const npkillServer = new NpkillServer(filesService);
 
 process.on("SIGTERM", () => {
   console.log("SIGTERM received, shutting down gracefully");

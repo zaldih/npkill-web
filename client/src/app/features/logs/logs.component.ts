@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { WebSocketSubject } from 'rxjs/webSocket';
-import { WsService } from '../../services/ws.service';
+import { Component } from '@angular/core';
+import { LogsService } from './logs.service';
 
 @Component({
   selector: 'app-logs',
@@ -9,18 +8,10 @@ import { WsService } from '../../services/ws.service';
   imports: [CommonModule],
   templateUrl: 'logs.component.html',
 })
-export class LogsComponent implements OnInit {
-  logs: any[] = [];
+export class LogsComponent {
+  constructor(private readonly logsService: LogsService) {}
 
-  constructor(private readonly ws: WsService) {}
-
-  ngOnInit() {
-    this.ws.connect().subscribe((msg: any) => {
-      if (Array.isArray(msg.payload) && msg.type === 'LOG') {
-        this.logs = msg.payload;
-      } else if (msg.type === 'LOG') {
-        this.logs = [...this.logs, msg.payload];
-      }
-    });
+  get logs() {
+    return this.logsService.logs;
   }
 }

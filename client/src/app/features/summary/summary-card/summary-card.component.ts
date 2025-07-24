@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, input, Input, OnInit } from '@angular/core';
+import { Component, input, computed, OnInit } from '@angular/core';
 import { SummaryCardOptions, SummaryData } from './summary-card.interface';
 import { HumanSizePipe } from '../../../shared/directives/human-size.pipe';
+import { AppStateService } from '../../../services/app-state.service';
 
 @Component({
   selector: 'app-summary-card',
@@ -23,9 +24,11 @@ export class SummaryCardComponent implements OnInit {
     },
     footerNote: '',
   });
+
   now = new Date();
+  version = computed(() => this.appStateService.version());
 
-  constructor() {}
+  constructor(private appStateService: AppStateService) {}
 
-  ngOnInit() {}
+  ngOnInit(): void {}
 }

@@ -2,6 +2,6 @@ export interface NpkillResult {
   path: string;
   size: number;
   modificationTime: number;
-  isDangeroud: boolean;
+  isDangerous: boolean;
   status: string;
 }

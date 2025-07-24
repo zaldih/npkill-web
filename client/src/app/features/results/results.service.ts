@@ -20,6 +20,10 @@ export class ResultsService {
     this._results = results;
   }
 
+  clearResults(): void {
+    this._results = [];
+  }
+
   get results(): NpkillResult[] {
     return this._results;
   }
