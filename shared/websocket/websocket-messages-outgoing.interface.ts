@@ -6,6 +6,7 @@ export type OutgoingMessageType =
   | "SERVER_STATE"
   | "NEW_RESULT"
   | "UPDATE_RESULT"
+  | "SCAN_END"
   | "LOG";
 
 interface Message {
@@ -28,6 +29,11 @@ export interface UpdateResultMessage extends Message {
   payload: NpkillResult;
 }
 
+export interface ScanEndMessage extends Message {
+  type: "SCAN_END";
+  payload: null;
+}
+
 export interface LogMessage extends Message {
   type: "LOG";
   payload: {
@@ -39,4 +45,5 @@ export type OutgoingWsMessage =
   | ServerStateMessage
   | NewResultMessage
   | UpdateResultMessage
+  | ScanEndMessage
   | LogMessage;

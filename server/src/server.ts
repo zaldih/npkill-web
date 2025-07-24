@@ -115,6 +115,7 @@ class NpkillServer {
     console.log(
       "Starting new scan with options: " + JSON.stringify(scanOptions)
     );
+    this.serverState.isScanning = true;
     this.results = [];
     const npkill = new Npkill();
     npkill
@@ -204,6 +205,25 @@ class NpkillServer {
               })
             )
             .subscribe();
+        }),
+        tap({
+          complete: () => {
+            this.serverState.isScanning = false;
+            console.log("Scan completed");
+            this.clients.forEach((client) => {
+              this.sendMessage(client, {
+                type: "SCAN_END",
+                payload: null,
+              });
+            });
+            this.serverState.isScanning = false;
+            this.clients.forEach((client) => {
+              this.sendMessage(client, {
+                type: "SERVER_STATE",
+                payload: this.serverState,
+              });
+            });
+          },
         })
       )
       .subscribe();
