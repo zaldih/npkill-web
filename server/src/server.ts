@@ -17,9 +17,14 @@ import { take, tap, Subject } from "rxjs";
 class NpkillServer {
   private app = express();
   private port = 2420;
-  private server = this.app.listen(this.port, () => {
-    console.log(`📦💥 Npkill server running on port ${this.port}`);
-  });
+  private onlyLocalhost = true;
+  private server = this.app.listen(
+    this.port,
+    this.onlyLocalhost ? "127.0.0.1" : "",
+    () => {
+      console.log(`📦💥 Npkill server running on port ${this.port}`);
+    }
+  );
   private wss = new WebSocketServer({ server: this.server });
   private npkillStarted = false;
   private clients: WebSocket[] = [];
