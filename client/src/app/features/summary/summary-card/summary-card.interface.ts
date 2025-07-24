@@ -3,7 +3,7 @@ export interface SummaryData {
   releasedSpace: number;
   totalResults: number;
   itemsDeleted: number;
-  percentageHardDriveFreed?: number;
+  percentageHardDriveFreed: number;
 }
 
 export interface SummaryCardOptions {

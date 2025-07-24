@@ -49,6 +49,8 @@ import { SpriteAnimatorComponent } from '../sprite-animator/sprite-animator.comp
 })
 export class CosmicBtnComponent implements OnInit, OnDestroy {
   @Input() text!: string;
+  @Input() autoDelete: boolean = true;
+  @Input() onComplete?: () => void;
   @ViewChild('canvas', { static: true })
   private canvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('canvasContainer', { static: true })
@@ -80,9 +82,11 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
   constructor(private el: ElementRef) {}
 
   ngOnInit(): void {
-    setTimeout(() => {
-      this.dissapear();
-    }, Math.random() * 1000 + 8000);
+    if (this.autoDelete) {
+      setTimeout(() => {
+        this.dissapear();
+      }, Math.random() * 1000 + 8000);
+    }
     setInterval(() => {
       const tileWidth = 96;
       const numberOfTiles = 18;
@@ -136,7 +140,14 @@ export class CosmicBtnComponent implements OnInit, OnDestroy {
     this.particleGeneration = false;
     setTimeout(() => {
       this.dissapearBanner = true;
+      if (this.onComplete) {
+        this.onComplete();
+      }
     }, 1000);
+  }
+
+  public triggerDelete(): void {
+    this.dissapear();
   }
 
   private setCanvasSize(): void {

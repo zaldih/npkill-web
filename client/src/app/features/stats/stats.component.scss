@@ -1,0 +1,78 @@
+.stats-grid {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  text-align: center;
+}
+
+.stat-card {
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--accent-color),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &.releasable {
+    --accent-color: #f39c12;
+  }
+
+  &.released {
+    --accent-color: #27ae60;
+  }
+}
+
+.stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-label {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #505050;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: normal;
+  margin-bottom: 12px;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f74e4e;
+  margin-bottom: 0.25rem;
+  font-variant-numeric: tabular-nums;
+  transition: all 0.3s ease;
+
+  &.animate {
+    color: var(--accent-color);
+    text-shadow: 0 0 20px var(--accent-color);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.stat-value.animate {
+  animation: pulse 0.6s ease-in-out;
+}

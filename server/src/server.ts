@@ -30,6 +30,7 @@ class NpkillServer {
   private clients: WebSocket[] = [];
   private results: NpkillResult[] = [];
   private logs: LogEntry[] = [];
+  private npkill: Npkill | null = null;
   private searchLocalConfig = {
     excludeHidden: true,
   };
@@ -47,6 +48,12 @@ class NpkillServer {
     },
     storage: {
       initialDiskSize: 0,
+    },
+    stats: {
+      releasableSpace: 0,
+      releasedSpace: 0,
+      totalResults: 0,
+      deletedResults: 0,
     },
   };
 
@@ -74,8 +81,15 @@ class NpkillServer {
       this.clients = [...this.clients, ws];
 
       this.sendMessage(ws, { type: "SERVER_STATE", payload: this.serverState });
-      this.sendMessage(ws, { type: "NEW_RESULT", payload: this.results });
+
+      const liveResults = this.results.filter((r) => r.status === "live");
+      this.sendMessage(ws, { type: "NEW_RESULT", payload: liveResults });
+
       this.sendMessage(ws, { type: "LOG", payload: { message: this.logs } });
+      this.sendMessage(ws, {
+        type: "STATS_UPDATE",
+        payload: this.serverState.stats,
+      });
 
       ws.on("message", (wsMessage: string) => {
         try {
@@ -98,6 +112,8 @@ class NpkillServer {
             this.startNpkill(scanOptions);
           } else if (message.type === "STOP_SCAN") {
             console.warn("// TODO stop need to be implemented in npkill core.");
+          } else if (message.type === "DELETE_RESULT") {
+            this.handleDeleteResult(message.payload.path, message.payload.size);
           }
         } catch (error) {
           console.error("Error processing ws message:", error);
@@ -117,8 +133,9 @@ class NpkillServer {
     );
     this.serverState.isScanning = true;
     this.results = [];
-    const npkill = new Npkill();
-    npkill
+    this.resetStats();
+    this.npkill = new Npkill();
+    this.npkill
       .getLogs$()
       .pipe(
         tap((log) => {
@@ -133,13 +150,13 @@ class NpkillServer {
       )
       .subscribe();
 
-    npkill
+    this.npkill
       .startScan$(scanOptions)
       .pipe(
         tap((found) => {
           const result: NpkillResult = {
             path: found.path,
-            isDangerous: npkill.getFileService().isDangerous(found.path),
+            isDangerous: this.npkill!.getFileService().isDangerous(found.path),
             modificationTime: -1,
             size: -1,
             status: "live",
@@ -158,8 +175,7 @@ class NpkillServer {
             return;
           }
           const sizeOptions: GetFolderSizeOptions = { path: found.path };
-          npkill
-            .getFolderSize$(sizeOptions)
+          this.npkill!.getFolderSize$(sizeOptions)
             .pipe(
               take(1),
               tap((sizeResult: GetFolderSizeResult) => {
@@ -171,6 +187,7 @@ class NpkillServer {
                   ...this.results[idx],
                   size: sizeResult.size,
                 };
+                this.updateStats();
                 this.clients.forEach((client) => {
                   this.sendMessage(client, {
                     type: "UPDATE_RESULT",
@@ -181,9 +198,8 @@ class NpkillServer {
                 const modOptions: GetFolderLastModificationOptions = {
                   path: found.path,
                 };
-                npkill
-                  .getFolderLastModification(modOptions)
-                  .then((modResult: GetFolderLastModificationResult) => {
+                this.npkill!.getFolderLastModification(modOptions).then(
+                  (modResult: GetFolderLastModificationResult) => {
                     const idx2 = this.results.findIndex(
                       (r) => r.path === found.path
                     );
@@ -201,7 +217,8 @@ class NpkillServer {
                         payload: this.results[idx2],
                       });
                     });
-                  });
+                  }
+                );
               })
             )
             .subscribe();
@@ -236,6 +253,86 @@ class NpkillServer {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message));
     }
+  }
+
+  private async handleDeleteResult(path: string, size: number) {
+    if (!this.npkill) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log(`Removing folder: ${path} (${size} bytes)`);
+    const result = await this.npkill.deleteFolder({ path });
+    if (!result.success) {
+      console.error(`Failed to delete folder: ${path}`);
+      return;
+    }
+    console.log(`Successfully deleted folder: ${path}`);
+
+    const resultIndex = this.results.findIndex((r) => r.path === path);
+    if (resultIndex !== -1) {
+      this.results[resultIndex] = {
+        ...this.results[resultIndex],
+        status: "deleted",
+      };
+
+      this.updateStats();
+
+      this.clients.forEach((client) => {
+        this.sendMessage(client, {
+          type: "UPDATE_RESULT",
+          payload: this.results[resultIndex],
+        });
+      });
+
+      console.log(`Successfully deleted folder: ${path}`);
+    }
+  }
+
+  private updateStats(): void {
+    const liveResults = this.results.filter(
+      (r) => r.status === "live" && r.size > 0
+    );
+    const deletedResults = this.results.filter((r) => r.status === "deleted");
+
+    const releasableSpace = liveResults.reduce(
+      (acc, result) => acc + result.size,
+      0
+    );
+    const releasedSpace = deletedResults.reduce(
+      (acc, result) => acc + result.size,
+      0
+    );
+
+    this.serverState.stats = {
+      releasableSpace,
+      releasedSpace,
+      totalResults: liveResults.length,
+      deletedResults: deletedResults.length,
+    };
+
+    this.clients.forEach((client) => {
+      this.sendMessage(client, {
+        type: "STATS_UPDATE",
+        payload: this.serverState.stats,
+      });
+    });
+  }
+
+  private resetStats(): void {
+    this.serverState.stats = {
+      releasableSpace: 0,
+      releasedSpace: 0,
+      totalResults: 0,
+      deletedResults: 0,
+    };
+
+    this.clients.forEach((client) => {
+      this.sendMessage(client, {
+        type: "STATS_UPDATE",
+        payload: this.serverState.stats,
+      });
+    });
   }
 
   destroy(): void {

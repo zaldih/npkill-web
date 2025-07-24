@@ -1,1 +1,77 @@
+#summaryCardWrapper {
+  display: inline-block;
+  transform: translateX(-120%);
+  opacity: 0;
+  animation-fill-mode: forwards;
+  perspective: 1000px;
 
+  &.animate {
+    animation: printTicket 4s cubic-bezier(0.55, 0.01, 0.15, 1.2) forwards;
+  }
+}
+
+@keyframes printTicket {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+
+  10% {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+
+  20% {
+    transform: translateX(-80%);
+  }
+
+  30% {
+    transform: translateX(-70%);
+  }
+
+  40% {
+    transform: translateX(-60%);
+  }
+
+  50% {
+    transform: translateX(-50%);
+  }
+
+  60% {
+    transform: translateX(-40%);
+  }
+
+  70% {
+    transform: translateX(-25%);
+  }
+
+  80% {
+    transform: translateX(-10%);
+  }
+
+  90% {
+    transform: translateX(0);
+  }
+
+  /* Start of tear-off */
+  93% {
+    transform: translateX(0) rotateX(0deg);
+  }
+
+  95% {
+    transform: translateX(0) rotateX(12deg);
+  }
+
+  97% {
+    transform: translateX(0) rotateX(-10deg);
+  }
+
+  99% {
+    transform: translateX(0) rotateX(4deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotateX(0deg);
+  }
+}

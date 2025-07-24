@@ -74,6 +74,13 @@ export class WsService implements OnDestroy {
     }
   }
 
+  sendDeleteResult(path: string, size: number): void {
+    this.sendMessage({
+      type: 'DELETE_RESULT',
+      payload: { path, size },
+    });
+  }
+
   private createConnection(): void {
     try {
       this.socket = new WebSocket(WS_URL);

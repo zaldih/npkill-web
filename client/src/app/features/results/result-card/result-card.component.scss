@@ -22,6 +22,19 @@
   margin-top: auto;
 }
 
+.deleted-indicator {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #27ae60;
+  color: white;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
 .footer-stat-item {
   flex: 1;
   display: flex;

@@ -4,6 +4,7 @@ import {
   OnChanges,
   OnInit,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { NpkillResult } from '../../../../../../shared/npkill-result.interface';
 import { MatCard, MatCardContent, MatCardFooter } from '@angular/material/card';
@@ -12,6 +13,8 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { HumanSizePipe } from '../../../shared/directives/human-size.pipe';
 import { CosmicBtnComponent } from '../../cosmic-btn/cosmic-btn.component';
 import { SpriteAnimatorComponent } from '../../sprite-animator/sprite-animator.component';
+import { WsService } from '../../../services/ws.service';
+import { ResultsService } from '../results.service';
 
 @Component({
   selector: 'app-result-card',
@@ -32,11 +35,18 @@ import { SpriteAnimatorComponent } from '../../sprite-animator/sprite-animator.c
 export class ResultCardComponent implements OnChanges, OnInit {
   result = input.required<NpkillResult>();
 
+  @ViewChild(CosmicBtnComponent) cosmicBtn?: CosmicBtnComponent;
+
   projectParentPath: string = '';
   projectName: string = '';
   target: string = '';
 
   isDeleting = false;
+
+  constructor(
+    private readonly wsService: WsService,
+    private readonly resultsService: ResultsService
+  ) {}
 
   ngOnInit() {
     //    this.splitPath(this.result.path);
@@ -45,13 +55,30 @@ export class ResultCardComponent implements OnChanges, OnInit {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['result'] && this.result().path) {
       this.splitPath(this.result().path);
+
+      if (
+        changes['result'].currentValue?.status === 'deleted' &&
+        changes['result'].previousValue?.status !== 'deleted'
+      ) {
+        if (this.cosmicBtn) {
+          this.cosmicBtn.triggerDelete();
+        }
+      }
     }
   }
 
   remove() {
+    if (this.isDeleting || this.result().status === 'deleted') return;
+
     this.isDeleting = true;
+    const result = this.result();
+
+    this.wsService.sendDeleteResult(result.path, result.size);
   }
 
+  onDeleteComplete() {
+    this.isDeleting = false;
+  }
   get bigSizeImg(): string {
     return `/${'stu'}${'ff'}/${'oh'}-${'go'}${'d'}-${'why'}.p${'ng'}`;
   }

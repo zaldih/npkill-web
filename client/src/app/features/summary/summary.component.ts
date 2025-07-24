@@ -2,7 +2,6 @@ import { Component, OnInit, signal } from '@angular/core';
 import { SummaryService } from './summary.service';
 import { CommonModule } from '@angular/common';
 import { SummaryCardComponent } from './summary-card/summary-card.component';
-import { SummaryData } from './summary-card/summary-card.interface';
 import html2canvas from 'html2canvas';
 import { SummaryOptionsComponent } from './summary-options/summary-options.component';
 import { SummaryCardOptions } from './summary-card/summary-card.interface';
@@ -21,14 +20,6 @@ import { MatExpansionModule } from '@angular/material/expansion';
   ],
 })
 export class SummaryComponent implements OnInit {
-  summaryData = signal<SummaryData>({
-    releasableSpace: 0,
-    releasedSpace: 0,
-    totalResults: 0,
-    itemsDeleted: 0,
-    percentageHardDriveFreed: 6,
-  });
-
   options = signal<SummaryCardOptions>({
     visibility: {
       date: true,
@@ -40,6 +31,8 @@ export class SummaryComponent implements OnInit {
     },
     footerNote: '',
   });
+
+  shouldAnimate = true;
 
   constructor(private readonly summaryService: SummaryService) {}
 

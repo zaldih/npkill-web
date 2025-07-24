@@ -20,13 +20,19 @@
     </div>
 
     <div style="margin: 8px 0; margin-top: auto">
-      @if(!isDeleting){
+      @if(result().status === 'deleted') {
+      <div class="deleted-indicator">✓ Deleted</div>
+      } @else if(!isDeleting){
       <button class="remove-btn" (click)="remove()">
         <mat-icon>delete</mat-icon>
         Delete
       </button>
       }@else {
-      <app-cosmic-btn [text]="result().size | humanSize" />
+      <app-cosmic-btn
+        [text]="result().size | humanSize"
+        [autoDelete]="false"
+        [onComplete]="onDeleteComplete.bind(this)"
+      />
       }
     </div>
   </mat-card-content>
@@ -36,6 +42,7 @@
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
     }@else {
     <div style="height: 4px"></div>
+    <!-- <div>{{ target }}</div> -->
     }
 
     <div style="width: 100%; display: flex; min-height: 2.2em">

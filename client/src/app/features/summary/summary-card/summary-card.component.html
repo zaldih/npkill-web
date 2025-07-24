@@ -45,11 +45,10 @@
       <p class="stat-point">Total Results: {{ summary().totalResults }}</p>
       } @if(options().visibility.itemsDeleted) {
       <p class="stat-point">Items Deleted: {{ summary().itemsDeleted }}</p>
-      } @if(options().visibility.percentageHardDriveFreed &&
-      summary().percentageHardDriveFreed) {
+      } @if(options().visibility.percentageHardDriveFreed) {
       <p class="stat-point">
-        Hard Drive Freed: {{ summary().percentageHardDriveFreed }}%
-        @if(summary().percentageHardDriveFreed! > 5){ 🔥 }
+        Hard Drive Freed: {{ summary().percentageHardDriveFreed.toFixed(2) }}%
+        @if(summary().percentageHardDriveFreed > 5){ 🔥 }
       </p>
       }
     </div>

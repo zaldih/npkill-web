@@ -1,4 +1,4 @@
-export type IncomingMessageType = "START_SCAN" | "STOP_SCAN";
+export type IncomingMessageType = "START_SCAN" | "STOP_SCAN" | "DELETE_RESULT";
 
 interface Message {
   type: IncomingMessageType;
@@ -20,4 +20,15 @@ export interface StopScanMessage extends Message {
   payload: null;
 }
 
-export type IncomingWsMessage = StartScanMessage | StopScanMessage;
+export interface DeleteResultMessage extends Message {
+  type: "DELETE_RESULT";
+  payload: {
+    path: string;
+    size: number;
+  };
+}
+
+export type IncomingWsMessage =
+  | StartScanMessage
+  | StopScanMessage
+  | DeleteResultMessage;

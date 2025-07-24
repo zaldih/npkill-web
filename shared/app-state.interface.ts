@@ -13,4 +13,10 @@ export interface ServerState {
   storage: {
     initialDiskSize: number;
   };
+  stats: {
+    releasableSpace: number;
+    releasedSpace: number;
+    totalResults: number;
+    deletedResults: number;
+  };
 }

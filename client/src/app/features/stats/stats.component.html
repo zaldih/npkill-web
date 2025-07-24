@@ -1,9 +1,29 @@
-<div>
-  <div>
-    Releasable space: <span>{{ releasableSpace }}</span>
-  </div>
+<div class="stats-container">
+  <div class="stats-grid">
+    <div class="stat-card releasable">
+      <div class="stat-content">
+        <h3 class="stat-label">Releasable</h3>
+        <div
+          class="stat-value"
+          [class.animate]="animatingReleasable"
+          #releasableValue
+        >
+          {{ animatedReleasableSpace | humanSize }}
+        </div>
+      </div>
+    </div>
 
-  <div>
-    Space saved: <span>{{ releasedSpace }}</span>
+    <div class="stat-card released">
+      <div class="stat-content">
+        <h3 class="stat-label">Saved</h3>
+        <div
+          class="stat-value"
+          [class.animate]="animatingReleased"
+          #releasedValue
+        >
+          {{ animatedReleasedSpace | humanSize }}
+        </div>
+      </div>
+    </div>
   </div>
 </div>

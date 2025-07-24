@@ -21,6 +21,12 @@ const DEFAULT_STATE: AppState = {
   storage: {
     initialDiskSize: 0,
   },
+  stats: {
+    releasableSpace: 0,
+    releasedSpace: 0,
+    totalResults: 0,
+    deletedResults: 0,
+  },
 };
 
 @Injectable({
@@ -37,6 +43,7 @@ export class AppStateService {
   );
   readonly version = computed(() => this._state().information.npkillWebVersion);
   readonly settings = computed(() => this._state().settings);
+  readonly stats = computed(() => this._state().stats);
 
   updateServerState(serverState: ServerState): void {
     this._state.update((current) => ({

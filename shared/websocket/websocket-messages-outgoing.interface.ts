@@ -7,7 +7,8 @@ export type OutgoingMessageType =
   | "NEW_RESULT"
   | "UPDATE_RESULT"
   | "SCAN_END"
-  | "LOG";
+  | "LOG"
+  | "STATS_UPDATE";
 
 interface Message {
   type: OutgoingMessageType;
@@ -41,9 +42,20 @@ export interface LogMessage extends Message {
   };
 }
 
+export interface StatsUpdateMessage extends Message {
+  type: "STATS_UPDATE";
+  payload: {
+    releasableSpace: number;
+    releasedSpace: number;
+    totalResults: number;
+    deletedResults: number;
+  };
+}
+
 export type OutgoingWsMessage =
   | ServerStateMessage
   | NewResultMessage
   | UpdateResultMessage
   | ScanEndMessage
-  | LogMessage;
+  | LogMessage
+  | StatsUpdateMessage;
