@@ -4,7 +4,8 @@
       <div style="display: flex; gap: 14px; align-items: top">
         <div class="project-name">{{ projectName }}</div>
 
-        <div style="margin-left: auto" class="asdfas">
+        <div style="margin-left: auto">
+          @if(result().size > 0) {
           <app-sprite-animator
             [tileImage]="'/planets/jupiter-tile.png'"
             [tileWidth]="32"
@@ -12,6 +13,7 @@
             [size]="32"
             [fps]="2"
           />
+          }
         </div>
       </div>
       <div class="project-path">{{ projectParentPath }}/</div>
@@ -27,29 +29,44 @@
       <app-cosmic-btn [text]="result().size | humanSize" />
       }
     </div>
+  </mat-card-content>
 
+  <mat-card-footer style="margin-top: auto">
     @if (result().size === -1 || result().modificationTime === -1) {
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
     }@else {
     <div style="height: 4px"></div>
     }
-  </mat-card-content>
 
-  <mat-card-footer style="margin-top: auto">
     <div style="width: 100%; display: flex; min-height: 2.2em">
       <div class="footer-stat-item">
-        <div style="font-size: 1.3em">{{ result().modificationTime }} days</div>
+        <div style="font-size: 1.3em">
+          @if(result().modificationTime >= 0){
+          {{ result().modificationTime }} days }@else {
+          <span style="opacity: 0.5">...</span>
+          }
+        </div>
         <!-- <div style="font-size: 0.7em">last usage</div> -->
       </div>
 
       <div style="width: 1px; background-color: bisque"></div>
 
       <div class="footer-stat-item">
-        <div style="display: flex; gap: 0.4em; align-items: center">
+        <div
+          style="
+            display: flex;
+            gap: 0.4em;
+            align-items: center;
+            font-size: 1.3em;
+          "
+        >
           @if(result().size > 2800000000){
           <img style="height: 30px" [src]="bigSizeImg" />
-          }
+          } @if(result().size > 0){
           {{ result().size | humanSize }}
+          }@else {
+          <span style="opacity: 0.5">...</span>
+          }
         </div>
       </div>
     </div>
