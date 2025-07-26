@@ -1,11 +1,6 @@
 import express from "express";
 import { Server } from "node:http";
-import {
-  Npkill,
-  ScanOptions,
-  GetFolderLastModificationOptions,
-  LogEntry,
-} from "npkill";
+import { Npkill, ScanOptions, ScanFoundFolder, LogEntry } from "npkill";
 import { WebSocketServer, WebSocket } from "ws";
 import { NpkillResult } from "../../shared/npkill-result.interface.js";
 import {
@@ -16,6 +11,7 @@ import { take, tap, Subject, finalize } from "rxjs";
 import { ServerState } from "../../shared/app-state.interface.js";
 import { homedir } from "node:os";
 import { FilesService } from "./files.service.js";
+import { firstValueFrom } from "rxjs/internal/firstValueFrom";
 
 class NpkillServer {
   private app = express();
@@ -94,7 +90,6 @@ class NpkillServer {
             const { rootPath, targetDirs, excludePattern, excludeHidden } =
               message.payload;
             const scanOptions: ScanOptions = {
-              rootPath,
               target: targetDirs[0],
               exclude: excludePattern,
             };
@@ -105,7 +100,7 @@ class NpkillServer {
               excludePattern,
               excludeHidden,
             };
-            this.startNpkill(scanOptions);
+            this.startNpkill(rootPath, scanOptions);
           } else if (message.type === "STOP_SCAN") {
             console.warn("// TODO stop need to be implemented in npkill core.");
           } else if (message.type === "DELETE_RESULT") {
@@ -123,8 +118,8 @@ class NpkillServer {
     });
   }
 
-  private startNpkill(scanOptions: ScanOptions): void {
-    console.log("[Npkill] Starting new scan:", scanOptions);
+  private startNpkill(rootPath: string, scanOptions: ScanOptions): void {
+    console.log("[Npkill] Starting new scan:", rootPath, scanOptions);
 
     this.serverState.isScanning = true;
     this.results = [];
@@ -142,7 +137,7 @@ class NpkillServer {
       .subscribe();
 
     this.npkill
-      .startScan$(scanOptions)
+      .startScan$(rootPath, scanOptions)
       .pipe(
         tap((found) => this.handleFoundPath(found)),
         finalize(() => this.onScanComplete())
@@ -150,10 +145,12 @@ class NpkillServer {
       .subscribe();
   }
 
-  private handleFoundPath(found: { path: string }): void {
-    const isDangerous = this.npkill!.getFileService().isDangerous(found.path);
+  private handleFoundPath(found: ScanFoundFolder): void {
+    const isDangerous = found.riskAnalysis?.isSensitive || false;
 
-    if (this.searchLocalConfig.excludeHidden && isDangerous) return;
+    if (this.searchLocalConfig.excludeHidden && isDangerous) {
+      return;
+    }
 
     const result: NpkillResult = {
       path: found.path,
@@ -166,7 +163,7 @@ class NpkillServer {
     this.results = [...this.results, result];
     this.broadcast({ type: "NEW_RESULT", payload: [result] });
 
-    this.npkill!.getFolderSize$({ path: found.path })
+    this.npkill!.getSize$(found.path)
       .pipe(
         take(1),
         tap((sizeResult) => this.updateResultSize(found.path, sizeResult.size))
@@ -183,10 +180,9 @@ class NpkillServer {
     this.updateStats();
     this.broadcast({ type: "UPDATE_RESULT", payload: this.results[idx] });
 
-    const modOptions: GetFolderLastModificationOptions = { path };
-    this.npkill!.getFolderLastModification(modOptions)
+    firstValueFrom(this.npkill!.getNewestFile$(path))
       .then((modResult) =>
-        this.updateResultModificationTime(path, modResult.timestamp)
+        this.updateResultModificationTime(path, modResult?.timestamp || -1)
       )
       .catch((err) =>
         console.error(
@@ -238,7 +234,7 @@ class NpkillServer {
 
     await new Promise((resolve) => setTimeout(resolve, 3000));
     console.log(`Removing folder: ${path} (${size} bytes)`);
-    const result = await this.npkill.deleteFolder({ path });
+    const result = await firstValueFrom(this.npkill.delete$(path));
     if (!result.success) {
       console.error(`Failed to delete folder: ${path}`);
       return;
